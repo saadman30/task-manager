@@ -30,10 +30,7 @@ export function TasksProvider({ children }) {
           console.log('No token found, skipping task fetch');
           return [];
         }
-
-        console.log('Fetching tasks...');
         const response = await TaskAPI.getAllTasks();
-        console.log('Tasks fetched successfully:', response);
         
         let taskList = [];
         if (Array.isArray(response)) {
@@ -102,7 +99,6 @@ export function TasksProvider({ children }) {
   // Update task mutation with optimistic update
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, updates }) => {
-      console.log('Updating task:', taskId, 'with updates:', updates);
       const response = await TaskAPI.updateTask(taskId, updates);
       return response;
     },
@@ -190,7 +186,6 @@ export function TasksProvider({ children }) {
 
   const updateTask = useCallback(async (taskId, updates) => {
     try {
-      console.log('updateTask called with:', { taskId, updates });
       await updateTaskMutation.mutateAsync({ taskId, updates });
       return { success: true };
     } catch (error) {

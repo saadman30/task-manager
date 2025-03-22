@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ToastProvider } from '../../components/ui/Toast';
 import TaskList from '../../components/TaskList';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -124,6 +125,7 @@ export default function TasksPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <ToastProvider />
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Task Management</h1>

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { showToast } from '../../components/ui/Toast';
 import { taskFilterSchema, taskSchema, TASK_VALIDATION } from '../../schemas/task';
 import { useTasks } from '../../contexts/TasksContext';
 import { useDebouncedValue } from '../../hooks/useDebounce';
@@ -125,10 +126,11 @@ export function useTasksLogic() {
   const handleCreateTask = async (data) => {
     try {
       await createTask(data);
+      showToast.success('Task created successfully');
       reset(defaultTaskValues);
       return true;
     } catch (error) {
-      console.error('Failed to create task:', error);
+      showToast.error(error, 'create task');
       return false;
     }
   };
@@ -136,9 +138,10 @@ export function useTasksLogic() {
   const handleUpdateTask = async (taskId, updates) => {
     try {
       await updateTask(taskId, updates);
+      showToast.success('Task updated successfully');
       return true;
     } catch (error) {
-      console.error('Failed to update task:', error);
+      showToast.error(error, 'update task');
       return false;
     }
   };
@@ -146,9 +149,10 @@ export function useTasksLogic() {
   const handleDeleteTask = async (taskId) => {
     try {
       await deleteTask(taskId);
+      showToast.success('Task deleted successfully');
       return true;
     } catch (error) {
-      console.error('Failed to delete task:', error);
+      showToast.error(error, 'delete task');
       return false;
     }
   };

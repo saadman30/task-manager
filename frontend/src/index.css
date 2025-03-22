@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 @layer components {
+  /* Task enter animation */
   .task-enter {
     opacity: 0;
-    transform: scale(0.9);
+    transform: translateY(10px) scale(0.95);
   }
   
   .task-enter-active {
     opacity: 1;
-    transform: scale(1);
-    transition: opacity 300ms, transform 300ms;
+    transform: translateY(0) scale(1);
+    transition: opacity 300ms ease-in-out, transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   
+  /* Task exit animation */
   .task-exit {
     opacity: 1;
     transform: scale(1);
@@ -21,11 +23,43 @@
   
   .task-exit-active {
     opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 300ms, transform 300ms;
+    transform: scale(0.95);
+    transition: opacity 300ms ease-in-out, transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   
+  /* Task move animation */
   .task-move {
-    transition: transform 300ms ease-in-out;
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Toast animations */
+  .toast-container {
+    --toastify-color-success: theme('colors.green.500');
+    --toastify-color-error: theme('colors.red.500');
+    --toastify-color-warning: theme('colors.yellow.500');
+    --toastify-color-info: theme('colors.blue.500');
+  }
+
+  .toast-success {
+    @apply bg-green-50 text-green-800 border border-green-200;
+  }
+
+  .toast-error {
+    @apply bg-red-50 text-red-800 border border-red-200;
+  }
+
+  .toast-warning {
+    @apply bg-yellow-50 text-yellow-800 border border-yellow-200;
+  }
+
+  .toast-info {
+    @apply bg-blue-50 text-blue-800 border border-blue-200;
+  }
+
+  .toast-success-progress,
+  .toast-error-progress,
+  .toast-warning-progress,
+  .toast-info-progress {
+    @apply bg-current opacity-20;
   }
 }

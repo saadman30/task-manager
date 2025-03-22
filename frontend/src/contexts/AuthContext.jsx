@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { showToast } from '../components/ui/Toast';
 import { TaskAPI } from '../services/api';
+import { ROUTES } from '../config/routes';
 
 const AuthContext = createContext(null);
 
@@ -28,10 +30,11 @@ export function AuthProvider({ children }) {
       const response = await TaskAPI.login({ email, password });
       setUser(response.user);
       queryClient.invalidateQueries(['tasks']);
-      navigate('/tasks');
+      navigate(ROUTES.TASKS);
+      showToast.success('Welcome back!');
       return { success: true };
     } catch (error) {
-      console.error('Login failed:', error);
+      showToast.error(error, 'login');
       return {
         success: false,
         error: error.response?.data?.message || 'Login failed'
@@ -44,14 +47,15 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       await TaskAPI.logout();
+      showToast.success('Logged out successfully');
     } catch (error) {
-      console.error('Logout error:', error);
+      showToast.warning('Error during logout, clearing session anyway');
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
       queryClient.clear();
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
     }
   }, [navigate, queryClient]);
 
