@@ -8,32 +8,29 @@ import TaskCard from '../components/TaskCard';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import { TASK_STATUSES, TASK_STATUS_OPTIONS, SORT_OPTIONS, STATUS_STYLES } from '../constants/task';
+import { TASK_STATUSES, TASK_STATUS_OPTIONS, STATUS_STYLES } from '../constants/task';
+
+const SORT_OPTIONS = [
+  { value: 'due_date_asc', label: 'Due Date (Earliest First)' },
+  { value: 'due_date_desc', label: 'Due Date (Latest First)' },
+];
 
 export default function TasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [sortBy, setSortBy] = useState('due_date');
+  const [sortBy, setSortBy] = useState('due_date_asc'); // Default to ascending
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const { logout } = useAuth();
 
-  const { tasks, isLoading, error, createTask, updateTask, deleteTask, refetch } = useTasks();
+  const { tasks, isLoading, error, createTask, updateTask, deleteTask, refetch, filterTasks } = useTasks();
 
-  const filteredTasks = tasks?.filter(task => {
-    const matchesSearch = task.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      task.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  }).sort((a, b) => {
-    if (sortBy === 'name') return a.name.localeCompare(b.name);
-    if (sortBy === 'due_date') {
-      if (!a.due_date) return 1;
-      if (!b.due_date) return -1;
-      return new Date(a.due_date) - new Date(b.due_date);
-    }
-    return 0;
-  }) ?? [];
+  // Use filterTasks from TasksContext
+  const filteredTasks = filterTasks(tasks, {
+    searchTerm: debouncedSearch,
+    status: statusFilter === 'All' ? null : statusFilter,
+    sortBy
+  });
 
   const handleDrop = async (item, status) => {
     try {

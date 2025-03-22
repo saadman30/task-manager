@@ -12,13 +12,8 @@ export const TASK_STATUS_OPTIONS = [
 ];
 
 export const SORT_OPTIONS = [
-  { value: '', label: 'None' },
-  { value: 'name_asc', label: 'Name (A-Z)' },
-  { value: 'name_desc', label: 'Name (Z-A)' },
-  { value: 'due_date_asc', label: 'Due Date (Ascending)' },
-  { value: 'due_date_desc', label: 'Due Date (Descending)' },
-  { value: 'created_at_desc', label: 'Recently Created' },
-  { value: 'created_at_asc', label: 'Oldest First' },
+  { value: 'due_date_asc', label: 'Due Date (Earliest First)' },
+  { value: 'due_date_desc', label: 'Due Date (Latest First)' },
 ];
 
 export const STATUS_STYLES = {

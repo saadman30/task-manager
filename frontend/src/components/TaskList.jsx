@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDrag, useDrop } from 'react-dnd';
 import { TaskAPI } from '../services/api';
 import TaskCard from './TaskCard';
+import { useTasks } from '../contexts/TasksContext';
 
 const TASK_STATUSES = ['To Do', 'In Progress', 'Done'];
 
@@ -32,11 +33,9 @@ const TaskColumn = ({ status, tasks = [], onTaskMove }) => {
         {status}
       </h3>
       <div className="space-y-4">
-        {filteredTasks
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
+        {filteredTasks.map((task) => (
+          <TaskCard key={task.id} task={task} />
+        ))}
       </div>
     </div>
   );
@@ -44,39 +43,14 @@ const TaskColumn = ({ status, tasks = [], onTaskMove }) => {
 
 export default function TaskList({ searchTerm, sortBy, filterStatus }) {
   const queryClient = useQueryClient();
+  const { tasks: allTasks, isLoading, error, filterTasks } = useTasks();
 
-  const { data: tasksData, isLoading, error } = useQuery({
-    queryKey: ['tasks', { searchTerm, sortBy, filterStatus }],
-    queryFn: async () => {
-      console.log('Fetching tasks with params:', { searchTerm, sortBy, filterStatus });
-      const response = await TaskAPI.getAllTasks({
-        search: searchTerm,
-        sort: sortBy,
-        status: filterStatus,
-      });
-      
-      console.log('Raw API response:', response);
-      
-      // Handle paginated response
-      let tasks = [];
-      if (response && typeof response === 'object') {
-        if (response.data) {
-          tasks = response.data;
-        } else if (Array.isArray(response)) {
-          tasks = response;
-        }
-      }
-      
-      console.log('Processed tasks:', tasks);
-      return tasks;
-    },
-    // Refresh data every 30 seconds
-    refetchInterval: 30000,
+  // Apply filters and sorting
+  const tasks = filterTasks(allTasks, {
+    searchTerm,
+    status: filterStatus,
+    sortBy
   });
-
-  // Ensure tasks is always an array
-  const tasks = Array.isArray(tasksData) ? tasksData : [];
-  console.log('Current tasks state:', tasks);
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, data }) => {
