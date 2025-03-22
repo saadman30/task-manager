@@ -1,87 +1,81 @@
-import { useState, useCallback, useEffect } from 'react';
-import debounce from 'lodash/debounce';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Input from './ui/Input';
+import Select from './ui/Select';
+import { TASK_STATUS_OPTIONS } from '../constants/task';
 
-const TASK_STATUSES = ['To Do', 'In Progress', 'Done'];
+const filterSchema = z.object({
+  searchTerm: z.string().optional(),
+  status: z.string(),
+  sortBy: z.enum(['due_date_asc', 'due_date_desc'])
+});
+
+const SORT_OPTIONS = [
+  { value: 'due_date_asc', label: 'Due Date (Earliest First)' },
+  { value: 'due_date_desc', label: 'Due Date (Latest First)' },
+];
+
+const defaultValues = {
+  searchTerm: '',
+  status: 'All',
+  sortBy: 'due_date_asc'
+};
 
 export default function TaskFilters({ onSearch, onSort, onFilter }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState('due_date_asc'); // Default to ascending
+  const {
+    register,
+    watch,
+    formState: { isSubmitting }
+  } = useForm({
+    resolver: zodResolver(filterSchema),
+    defaultValues,
+    mode: 'onChange'
+  });
 
-  // Debounce the search to avoid too many API calls
-  const debouncedSearch = useCallback(
-    debounce((value) => {
-      onSearch(value);
-    }, 300),
-    [onSearch]
-  );
+  // Watch all form values
+  const formValues = watch();
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    debouncedSearch(value);
-  };
-
-  const handleSortChange = (e) => {
-    const value = e.target.value;
-    setSortOrder(value);
-    onSort(value);
-  };
-
-  const handleFilterChange = (e) => {
-    const value = e.target.value;
-    console.log('Filtering by status:', value);
-    onFilter(value);
-  };
-
-  // Call onSort with default value on mount
+  // Effect for handling changes
   useEffect(() => {
-    onSort('due_date_asc');
-  }, [onSort]);
+    const { searchTerm, status, sortBy } = formValues;
+    
+    // Debounce search
+    const debounceTimer = setTimeout(() => {
+      onSearch(searchTerm);
+    }, 300);
+
+    // Immediate updates for status and sort
+    onFilter(status);
+    onSort(sortBy);
+
+    return () => clearTimeout(debounceTimer);
+  }, [formValues, onSearch, onFilter, onSort]);
 
   return (
-    <div className="flex flex-wrap gap-4 p-4 bg-white rounded-lg shadow mb-4">
-      <div className="flex-1 min-w-[200px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Search Tasks
-        </label>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={handleSearchChange}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow mb-4">
+      <div className="w-full">
+        <Input
+          label="Search Tasks"
           placeholder="Search by name or description..."
-          className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          disabled={isSubmitting}
+          {...register('searchTerm')}
         />
       </div>
-
-      <div className="min-w-[150px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Sort By Due Date
-        </label>
-        <select
-          value={sortOrder}
-          onChange={handleSortChange}
-          className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="due_date_asc">Earliest First</option>
-          <option value="due_date_desc">Latest First</option>
-        </select>
-      </div>
-
-      <div className="min-w-[150px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Filter Status
-        </label>
-        <select
-          onChange={handleFilterChange}
-          className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">All</option>
-          {TASK_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-3">
+        <Select
+          label="Filter Status"
+          options={TASK_STATUS_OPTIONS}
+          disabled={isSubmitting}
+          {...register('status')}
+        />
+        <Select
+          label="Sort By Due Date"
+          options={SORT_OPTIONS}
+          disabled={isSubmitting}
+          {...register('sortBy')}
+        />
       </div>
     </div>
   );
