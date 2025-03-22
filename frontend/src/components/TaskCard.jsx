@@ -3,6 +3,7 @@ import { useDrag } from 'react-dnd';
 import { Circle, Pause, CheckCircle, X, Calendar } from 'lucide-react';
 import Button from './ui/Button';
 import TaskDetailsModal from './TaskDetailsModal';
+import { TASK_STATUSES, STATUS_STYLES } from '../constants/task';
 
 export default function TaskCard({ task, onUpdate, onDelete }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,28 +15,14 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     }),
   });
 
-  const statusConfig = {
-    'To Do': {
-      colors: 'bg-yellow-100',
-      shadowColor: 'shadow-yellow-200/50',
-      textColor: 'text-yellow-800',
-      icon: <Circle className="w-3 h-3" />
-    },
-    'In Progress': {
-      colors: 'bg-blue-100',
-      shadowColor: 'shadow-blue-200/50',
-      textColor: 'text-blue-800',
-      icon: <Pause className="w-3 h-3" />
-    },
-    'Done': {
-      colors: 'bg-green-100',
-      shadowColor: 'shadow-green-200/50',
-      textColor: 'text-green-800',
-      icon: <CheckCircle className="w-3 h-3" />
-    }
+  const statusIcons = {
+    [TASK_STATUSES.TODO]: <Circle className="w-3 h-3" />,
+    [TASK_STATUSES.IN_PROGRESS]: <Pause className="w-3 h-3" />,
+    [TASK_STATUSES.DONE]: <CheckCircle className="w-3 h-3" />,
   };
 
-  const config = statusConfig[task.status];
+  const config = STATUS_STYLES[task.status];
+  const icon = statusIcons[task.status];
 
   return (
     <>
@@ -87,7 +74,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
                 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium
                 bg-white/50 backdrop-blur-sm ${config.textColor}
               `}>
-                {config.icon}
+                {icon}
                 {task.status}
               </span>
             </div>

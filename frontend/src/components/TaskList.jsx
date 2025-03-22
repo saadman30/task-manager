@@ -79,7 +79,10 @@ export default function TaskList({ searchTerm, sortBy, filterStatus }) {
   console.log('Current tasks state:', tasks);
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => TaskAPI.updateTask(taskId, data),
+    mutationFn: ({ taskId, data }) => {
+      console.log('Updating task:', taskId, 'with data:', data);
+      return TaskAPI.updateTask(taskId, data);
+    },
     onMutate: async ({ taskId, data }) => {
       await queryClient.cancelQueries(['tasks']);
       const previousTasks = queryClient.getQueryData(['tasks']);
@@ -102,8 +105,8 @@ export default function TaskList({ searchTerm, sortBy, filterStatus }) {
   const handleTaskMove = (taskId, newStatus) => {
     console.log('Moving task:', { taskId, newStatus });
     updateTaskMutation.mutate({
-      taskId,
-      data: { status: newStatus },
+      taskId: parseInt(taskId, 10),
+      data: { status: newStatus }
     });
   };
 

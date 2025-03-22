@@ -19,20 +19,49 @@ export function TasksProvider({ children }) {
   const {
     data: tasks = [],
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const response = await TaskAPI.getTasks();
-      return response.data;
-    }
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, skipping task fetch');
+          return [];
+        }
+
+        console.log('Fetching tasks...');
+        const response = await TaskAPI.getAllTasks();
+        console.log('Tasks fetched successfully:', response);
+        
+        if (Array.isArray(response)) {
+          return response;
+        } else if (response && Array.isArray(response.data)) {
+          return response.data;
+        } else {
+          console.warn('Unexpected tasks response format:', response);
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
+    },
+    enabled: true, // Always enabled, but queryFn checks for token
+    staleTime: 0, // Immediately mark data as stale
+    cacheTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 1,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    initialData: []
   });
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: async (newTask) => {
-      const response = await TaskAPI.createTask(newTask);
-      return response.data;
+    mutationFn: async (taskData) => {
+      const response = await TaskAPI.createTask(taskData);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks']);
@@ -43,7 +72,7 @@ export function TasksProvider({ children }) {
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, updates }) => {
       const response = await TaskAPI.updateTask(id, updates);
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks']);
@@ -53,8 +82,8 @@ export function TasksProvider({ children }) {
   // Delete task mutation
   const deleteTaskMutation = useMutation({
     mutationFn: async (id) => {
-      await TaskAPI.deleteTask(id);
-      return id;
+      const response = await TaskAPI.deleteTask(id);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks']);
@@ -68,6 +97,28 @@ export function TasksProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Create task failed:', error);
+      if (error.response?.status === 422) {
+        // Validation errors
+        const errorMessage = error.response.data.message;
+        const errorFields = error.response.data.errors || {};
+        
+        // If there's a due_date error message in the main message
+        if (errorMessage.includes('due date')) {
+          return {
+            success: false,
+            errors: {
+              ...errorFields,
+              due_date: errorMessage
+            }
+          };
+        }
+        
+        return {
+          success: false,
+          errors: errorFields,
+          error: errorMessage
+        };
+      }
       return {
         success: false,
         error: error.response?.data?.message || 'Failed to create task'
@@ -81,6 +132,14 @@ export function TasksProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Update task failed:', error);
+      if (error.response?.status === 422) {
+        // Validation errors
+        return {
+          success: false,
+          errors: error.response.data.errors || {},
+          error: error.response.data.message
+        };
+      }
       return {
         success: false,
         error: error.response?.data?.message || 'Failed to update task'
@@ -103,6 +162,8 @@ export function TasksProvider({ children }) {
 
   // Filter and sort tasks
   const filterTasks = useCallback((tasks, { searchTerm, status, sortBy }) => {
+    if (!Array.isArray(tasks)) return [];
+    
     let filteredTasks = [...tasks];
 
     // Apply search filter
@@ -126,6 +187,8 @@ export function TasksProvider({ children }) {
           case 'name':
             return a.name.localeCompare(b.name);
           case 'dueDate':
+            if (!a.due_date) return 1;
+            if (!b.due_date) return -1;
             return new Date(a.due_date) - new Date(b.due_date);
           case 'status':
             return a.status.localeCompare(b.status);
@@ -139,9 +202,10 @@ export function TasksProvider({ children }) {
   }, []);
 
   const value = {
-    tasks,
+    tasks: Array.isArray(tasks) ? tasks : [],
     isLoading,
     error,
+    refetch,
     createTask,
     updateTask,
     deleteTask,

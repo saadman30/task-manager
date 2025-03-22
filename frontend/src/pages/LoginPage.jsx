@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { TaskAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -27,8 +26,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await TaskAPI.login(formData);
-      navigate('/tasks');
+      const result = await login(formData.email, formData.password);
+      if (!result.success) {
+        setError(result.error || 'Login failed. Please try again.');
+      }
     } catch (error) {
       console.error('Login error:', error);
       setError(

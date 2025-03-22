@@ -18,17 +18,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor to handle 401 responses
+// Interceptor to handle responses
 api.interceptors.response.use(
-  (response) => response,
+  (response) => response.data,
   async (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.reload();
+      window.location.href = '/login';
     }
-    return Promise.reject(error);
+    return Promise.reject(error.response?.data || error);
   }
 );
 
@@ -45,37 +44,21 @@ const getCsrfToken = async () => {
 };
 
 export const TaskAPI = {
-  // Initialize API by getting CSRF token and checking session
-  init: async () => {
-    try {
-      await getCsrfToken();
-      console.log('CSRF token obtained successfully');
-      return true;
-    } catch (error) {
-      console.error('Init error:', error);
-      throw error;
-    }
-  },
-
   // Authentication methods
   login: async (credentials) => {
     try {
       await getCsrfToken();
       const response = await api.post('/login', credentials);
-      const { access_token, user } = response.data;
+      const { access_token, user } = response;
       
       if (!access_token || !user) {
         throw new Error('Invalid response from server');
       }
       
-      // Store authentication data
       localStorage.setItem('token', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       
-      return {
-        token: access_token,
-        user: user
-      };
+      return { access_token, user };
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -85,29 +68,11 @@ export const TaskAPI = {
   logout: async () => {
     try {
       await api.post('/logout');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
     } catch (error) {
       console.error('Logout error:', error);
-      // Still clear local storage even if API call fails
+    } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      throw error;
-    }
-  },
-
-  // Check if user is authenticated
-  checkAuth: async () => {
-    try {
-      const response = await api.get('/user');
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
-        return response.data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Auth check error:', error);
-      return null;
     }
   },
 
@@ -120,49 +85,51 @@ export const TaskAPI = {
         status: params.status || '',
       };
 
-      const response = await api.get('/tasks', { 
+      const data = await api.get('/tasks', { 
         params: queryParams,
         paramsSerializer: {
-          indexes: null // This will serialize arrays with the same key
+          indexes: null
         }
       });
 
-      console.log('Tasks API response:', response.data);
-      return response.data;
+      console.log('Tasks API response:', data);
+      if (Array.isArray(data)) {
+        return data;
+      } else if (data && Array.isArray(data.data)) {
+        return data.data;
+      } else {
+        console.warn('Unexpected tasks response format:', data);
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      throw error;
+      return [];
     }
   },
 
   createTask: async (taskData) => {
-    try {
-      const response = await api.post('/tasks', taskData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating task:', error);
-      throw error;
-    }
+    const data = await api.post('/tasks', taskData);
+    return data;
   },
 
   updateTask: async (taskId, taskData) => {
     try {
-      const response = await api.put(`/tasks/${taskId}`, taskData);
-      return response.data;
+      console.log('API updateTask called with:', { taskId, taskData });
+      if (!taskId || typeof taskId !== 'number') {
+        throw new Error(`Invalid taskId: ${taskId}`);
+      }
+      const data = await api.put(`/tasks/${taskId}`, taskData);
+      console.log('Task update response:', data);
+      return data;
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('Task update failed:', error);
       throw error;
     }
   },
 
   deleteTask: async (taskId) => {
-    try {
-      const response = await api.delete(`/tasks/${taskId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      throw error;
-    }
+    const data = await api.delete(`/tasks/${taskId}`);
+    return data;
   },
 
   updateTaskOrder: async (taskId, data) => {

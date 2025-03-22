@@ -1,127 +1,153 @@
-import React from 'react';
-import { Circle, Pause, CheckCircle, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import Button from './ui/Button';
+import Input from './ui/Input';
+import Select from './ui/Select';
+import { TASK_STATUS_OPTIONS } from '../constants/task';
 
 export default function TaskDetailsModal({ task, onClose, onUpdate, onDelete }) {
-  if (!task) return null;
+  const [formData, setFormData] = useState({
+    name: task?.name || '',
+    description: task?.description || '',
+    status: task?.status || TASK_STATUS_OPTIONS[1].value, // Default to "To Do"
+    due_date: task?.due_date || '',
+  });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const statusConfig = {
-    'To Do': {
-      colors: 'bg-amber-50 border-amber-200',
-      textColor: 'text-amber-700',
-      icon: <Circle className="w-4 h-4" />
-    },
-    'In Progress': {
-      colors: 'bg-blue-50 border-blue-200',
-      textColor: 'text-blue-700',
-      icon: <Pause className="w-4 h-4" />
-    },
-    'Done': {
-      colors: 'bg-emerald-50 border-emerald-200',
-      textColor: 'text-emerald-700',
-      icon: <CheckCircle className="w-4 h-4" />
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error for the field being changed
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const config = statusConfig[task.status];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      const result = await onUpdate(task?.id ? { id: task.id, ...formData } : formData);
+      if (result.success) {
+        onClose();
+      } else if (result.errors) {
+        setErrors(result.errors);
+      } else if (result.error) {
+        setErrors({ general: result.error });
+      }
+    } catch (error) {
+      console.error('Task submission error:', error);
+      const errorMessage = error.response?.data?.message;
+      if (errorMessage?.includes('due date')) {
+        setErrors({ due_date: errorMessage });
+      } else {
+        setErrors({ 
+          general: errorMessage || 'An error occurred while saving the task.' 
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {task ? 'Edit Task' : 'New Task'}
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                    {task.name}
-                  </h3>
-                  <span className={`
-                    inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium
-                    ${config.colors} ${config.textColor}
-                  `}>
-                    {config.icon}
-                    {task.status}
-                  </span>
-                </div>
-
-                <div className="mt-6 space-y-4">
-                  {/* Description */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Description</h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                      {task.description || 'No description provided'}
-                    </p>
-                  </div>
-
-                  {/* Due Date */}
-                  {task.due_date && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Due Date</h4>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="w-4 h-4 mr-1.5" />
-                        {new Date(task.due_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status Change */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Change Status</h4>
-                    <div className="flex gap-2">
-                      {['To Do', 'In Progress', 'Done'].map((status) => (
-                        <button
-                          key={status}
-                          onClick={() => onUpdate(task.id, { status })}
-                          className={`
-                            px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-                            ${task.status === status 
-                              ? `${statusConfig[status].colors} ${statusConfig[status].textColor}`
-                              : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                            }
-                          `}
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {errors.general && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              {errors.general}
             </div>
-          </div>
+          )}
 
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <Input
+            label="Task Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            placeholder="Enter task name"
+            error={errors.name}
+          />
+
+          <Input
+            label="Description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            as="textarea"
+            rows="4"
+            placeholder="Enter task description"
+            error={errors.description}
+          />
+
+          <Input
+            label="Due Date"
+            type="datetime-local"
+            name="due_date"
+            value={formData.due_date}
+            onChange={handleChange}
+            error={errors.due_date}
+            min={new Date().toISOString().slice(0, 16)} // Set minimum date to now
+          />
+
+          <Select
+            label="Status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={TASK_STATUS_OPTIONS.slice(1)} // Exclude "All" option
+            error={errors.status}
+          />
+
+          <div className="flex justify-end space-x-3 pt-4">
+            {task && (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this task?')) {
+                    onDelete(task.id);
+                    onClose();
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            )}
+            <div className="flex-1" />
             <Button
-              variant="danger"
-              className="w-full sm:w-auto sm:ml-3"
-              onClick={() => {
-                onDelete(task.id);
-                onClose();
-              }}
-            >
-              Delete Task
-            </Button>
-            <Button
+              type="button"
               variant="secondary"
-              className="mt-3 sm:mt-0 w-full sm:w-auto"
               onClick={onClose}
             >
-              Close
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              isLoading={isSubmitting}
+            >
+              {task ? 'Save Changes' : 'Create Task'}
             </Button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
