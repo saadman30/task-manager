@@ -65,41 +65,94 @@ export function TasksProvider({ children }) {
     initialData: []
   });
 
-  // Create task mutation
+  // Create task mutation with optimistic update
   const createTaskMutation = useMutation({
     mutationFn: async (taskData) => {
       const response = await TaskAPI.createTask(taskData);
       return response;
     },
-    onSuccess: () => {
+    onMutate: async (newTask) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries(['tasks']);
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData(['tasks']);
+
+      // Optimistically update to the new value
+      const optimisticTask = {
+        id: `temp-${Date.now()}`, // Temporary ID
+        ...newTask,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      queryClient.setQueryData(['tasks'], old => [...(old || []), optimisticTask]);
+
+      // Return a context object with the snapshotted value
+      return { previousTasks };
+    },
+    onError: (err, newTask, context) => {
+      queryClient.setQueryData(['tasks'], context.previousTasks);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(['tasks']);
     }
   });
 
-  // Update task mutation
+  // Update task mutation with optimistic update
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, updates }) => {
       console.log('Updating task:', taskId, 'with updates:', updates);
       const response = await TaskAPI.updateTask(taskId, updates);
       return response;
     },
-    onSuccess: () => {
+    onMutate: async ({ taskId, updates }) => {
+      await queryClient.cancelQueries(['tasks']);
+      const previousTasks = queryClient.getQueryData(['tasks']);
+
+      queryClient.setQueryData(['tasks'], old => {
+        return old?.map(task => 
+          task.id === taskId 
+            ? { ...task, ...updates, updated_at: new Date().toISOString() }
+            : task
+        ) || [];
+      });
+
+      return { previousTasks };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['tasks'], context.previousTasks);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(['tasks']);
     }
   });
 
-  // Delete task mutation
+  // Delete task mutation with optimistic update
   const deleteTaskMutation = useMutation({
     mutationFn: async (id) => {
       const response = await TaskAPI.deleteTask(id);
       return response;
     },
-    onSuccess: () => {
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries(['tasks']);
+      const previousTasks = queryClient.getQueryData(['tasks']);
+
+      queryClient.setQueryData(['tasks'], old => 
+        old?.filter(task => task.id !== taskId) || []
+      );
+
+      return { previousTasks };
+    },
+    onError: (err, taskId, context) => {
+      queryClient.setQueryData(['tasks'], context.previousTasks);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(['tasks']);
     }
   });
 
-  // Task operations
+  // Task operations with optimistic updates
   const createTask = useCallback(async (taskData) => {
     try {
       await createTaskMutation.mutateAsync(taskData);
