@@ -14,8 +14,11 @@ php artisan key:generate --force
 php artisan config:clear
 php artisan cache:clear
 
-# Run database migrations
+# Run database migrations and seeders
+echo "Running migrations..."
 php artisan migrate --force
+echo "Running seeders..."
+php artisan db:seed --force
 
 # Start PHP-FPM
 php-fpm 

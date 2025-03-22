@@ -13,9 +13,9 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->sentence(),
-            'description' => fake()->paragraph(),
-            'status' => fake()->randomElement(Task::getStatuses()),
+            'name' => fake()->sentence(3),
+            'description' => fake()->paragraph(2),
+            'status' => fake()->randomElement(['To Do', 'In Progress', 'Done']),
             'due_date' => fake()->dateTimeBetween('now', '+30 days'),
             'user_id' => User::factory(),
         ];
