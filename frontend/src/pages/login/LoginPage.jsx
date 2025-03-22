@@ -1,45 +1,15 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
+import { useLoginLogic } from './useLoginLogic';
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const result = await login(formData.email, formData.password);
-      if (!result.success) {
-        setError(result.error || 'Login failed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(
-        error.response?.data?.message ||
-        'An error occurred during login. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    formData,
+    isLoading,
+    error,
+    handleChange,
+    handleSubmit,
+  } = useLoginLogic();
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
