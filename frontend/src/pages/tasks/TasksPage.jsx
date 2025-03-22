@@ -20,8 +20,10 @@ function TaskFilters({ searchTerm, status, sortBy, onSearchChange, onStatusChang
       <div className="w-full">
         <Input
           label="Search Tasks"
+          name="searchTerm"
+          type="text"
           placeholder="Search by name or description..."
-          value={searchTerm}
+          value={searchTerm || ''}
           onChange={onSearchChange}
           onClear={handleClearSearch}
           disabled={isDisabled}

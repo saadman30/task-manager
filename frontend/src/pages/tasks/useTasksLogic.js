@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { showToast } from '../../components/ui/Toast';
@@ -14,7 +14,7 @@ export const SORT_OPTIONS = [
 
 const defaultFilterValues = {
   searchTerm: '',
-  status: 'All',
+  status: TASK_STATUSES.ALL,
   sortBy: 'due_date_asc'
 };
 
@@ -22,7 +22,7 @@ const defaultTaskValues = {
   name: '',
   description: '',
   due_date: '',
-  status: 'To Do',
+  status: TASK_STATUSES.TODO,
 };
 
 export const getTodayDate = () => {
@@ -37,6 +37,7 @@ export function useTasksLogic() {
   const {
     watch: watchFilters,
     setValue: setFilterValue,
+    getValues: getFilterValues,
     formState: { isSubmitting: isFilterSubmitting }
   } = useForm({
     resolver: zodResolver(taskFilterSchema),
@@ -76,54 +77,60 @@ export function useTasksLogic() {
     }
   }, [nameValue, descriptionValue]);
 
-  // Filter tasks based on current criteria
-  const filteredTasks = tasks?.filter(task => {
-    if (!task) return false;
+  // Memoized filtered and sorted tasks
+  const { filteredTasks, sortedTasks, groupedTasks } = useMemo(() => {
+    // Filter tasks
+    const filtered = tasks?.filter(task => {
+      if (!task) return false;
 
-    const searchLower = debouncedSearchTerm?.toLowerCase() || '';
-    const matchesSearch = !debouncedSearchTerm || 
-      (task.name || '').toLowerCase().includes(searchLower) ||
-      (task.description || '').toLowerCase().includes(searchLower);
-    
-    const matchesStatus = status === TASK_STATUSES.ALL || task.status === status;
-    
-    return matchesSearch && matchesStatus;
-  }) || [];
+      const searchLower = debouncedSearchTerm?.toLowerCase() || '';
+      const matchesSearch = !debouncedSearchTerm || 
+        (task.name || '').toLowerCase().includes(searchLower) ||
+        (task.description || '').toLowerCase().includes(searchLower);
+      
+      const matchesStatus = status === TASK_STATUSES.ALL || task.status === status;
+      
+      return matchesSearch && matchesStatus;
+    }) || [];
 
-  // Sort tasks
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (!a?.due_date) return 1;
-    if (!b?.due_date) return -1;
-    const dateA = new Date(a.due_date);
-    const dateB = new Date(b.due_date);
-    return sortBy === 'due_date_asc' ? dateA - dateB : dateB - dateA;
-  });
+    // Sort tasks
+    const sorted = [...filtered].sort((a, b) => {
+      if (!a?.due_date) return 1;
+      if (!b?.due_date) return -1;
+      const dateA = new Date(a.due_date);
+      const dateB = new Date(b.due_date);
+      return sortBy === 'due_date_asc' ? dateA - dateB : dateB - dateA;
+    });
 
-  // Group tasks by status
-  const groupedTasks = sortedTasks.reduce((acc, task) => {
-    if (!task?.status) return acc;
-    if (!acc[task.status]) {
-      acc[task.status] = [];
-    }
-    acc[task.status].push(task);
-    return acc;
-  }, {});
+    // Group tasks
+    const grouped = sorted.reduce((acc, task) => {
+      if (!task?.status) return acc;
+      if (!acc[task.status]) {
+        acc[task.status] = [];
+      }
+      acc[task.status].push(task);
+      return acc;
+    }, {});
+
+    return { filteredTasks: filtered, sortedTasks: sorted, groupedTasks: grouped };
+  }, [tasks, debouncedSearchTerm, status, sortBy]);
 
   // Event handlers for filters
-  const handleSearchChange = (e) => {
-    setFilterValue('searchTerm', e.target.value || '');
-  };
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value || '';
+    setFilterValue('searchTerm', value);
+  }, [setFilterValue]);
 
-  const handleStatusChange = (e) => {
+  const handleStatusChange = useCallback((e) => {
     setFilterValue('status', e.target.value);
-  };
+  }, [setFilterValue]);
 
-  const handleSortChange = (e) => {
+  const handleSortChange = useCallback((e) => {
     setFilterValue('sortBy', e.target.value);
-  };
+  }, [setFilterValue]);
 
   // Event handler for task creation
-  const handleCreateTask = async (data) => {
+  const handleCreateTask = useCallback(async (data) => {
     try {
       await createTask(data);
       showToast.success('Task created successfully');
@@ -133,9 +140,9 @@ export function useTasksLogic() {
       showToast.error(error, 'create task');
       return false;
     }
-  };
+  }, [createTask, reset]);
 
-  const handleUpdateTask = async (taskId, updates) => {
+  const handleUpdateTask = useCallback(async (taskId, updates) => {
     try {
       await updateTask(taskId, updates);
       showToast.success('Task updated successfully');
@@ -144,9 +151,9 @@ export function useTasksLogic() {
       showToast.error(error, 'update task');
       return false;
     }
-  };
+  }, [updateTask]);
 
-  const handleDeleteTask = async (taskId) => {
+  const handleDeleteTask = useCallback(async (taskId) => {
     try {
       await deleteTask(taskId);
       showToast.success('Task deleted successfully');
@@ -155,7 +162,7 @@ export function useTasksLogic() {
       showToast.error(error, 'delete task');
       return false;
     }
-  };
+  }, [deleteTask]);
 
   return {
     // Form handling
@@ -167,7 +174,7 @@ export function useTasksLogic() {
     getHelperText,
 
     // Filter state and handlers
-    searchTerm,
+    searchTerm: getFilterValues().searchTerm,
     status,
     sortBy,
     onSearchChange: handleSearchChange,

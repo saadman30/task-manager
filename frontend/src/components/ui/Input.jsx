@@ -19,7 +19,7 @@ const Input = forwardRef(({
   const errorInputClasses = "border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500";
   const normalInputClasses = "border-gray-300 placeholder-gray-400";
 
-  const inputClasses = `${baseInputClasses} ${error ? errorInputClasses : normalInputClasses} ${className} ${showClearButton ? 'pr-10' : ''}`;
+  const inputClasses = `${baseInputClasses} ${error ? errorInputClasses : normalInputClasses} ${className} ${(showClearButton || error) ? 'pr-10' : ''}`;
 
   return (
     <div className="w-full">
@@ -35,23 +35,24 @@ const Input = forwardRef(({
           aria-invalid={error ? 'true' : 'false'}
           {...props}
         />
-        {showClearButton && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 
-              text-gray-400 hover:text-gray-600 
-              rounded-full hover:bg-gray-100
-              transition-colors duration-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-        {error && (
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-          </div>
-        )}
+        <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-2">
+          {showClearButton && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="p-1 text-gray-400 hover:text-gray-600 
+                rounded-full hover:bg-gray-100
+                transition-colors duration-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          {error && (
+            <div className="flex items-center pointer-events-none">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+          )}
+        </div>
       </div>
       {(error || helperText) && (
         <p className={`mt-1 text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
