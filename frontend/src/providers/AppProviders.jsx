@@ -10,8 +10,8 @@ import { TasksProvider } from '../contexts/TasksContext';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      staleTime: 0, // Always fetch fresh data
+      cacheTime: 1000 * 60 * 5, // 5 minutes cache
       refetchOnWindowFocus: true,
       refetchOnMount: 'always',
       refetchOnReconnect: 'always',
@@ -19,11 +19,25 @@ const queryClient = new QueryClient({
       suspense: false,
       networkMode: 'online',
       refetchInterval: false,
-      keepPreviousData: true,
+      keepPreviousData: false, // Don't keep previous data between user changes
     },
     mutations: {
       retry: 1,
       networkMode: 'online',
+    },
+  },
+});
+
+// Add global error handler
+queryClient.setDefaultOptions({
+  mutations: {
+    onError: (error) => {
+      console.error('Mutation error:', error);
+    },
+  },
+  queries: {
+    onError: (error) => {
+      console.error('Query error:', error);
     },
   },
 });

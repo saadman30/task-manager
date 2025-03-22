@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskAPI } from '../services/api';
 import { handleError, AppError, ErrorSeverity } from '../utils/errorHandler';
+import { useAuth } from './AuthContext';
 
 const TasksContext = createContext(null);
 
@@ -15,6 +16,14 @@ export function useTasks() {
 
 export function TasksProvider({ children }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Clear cache when user changes
+  useEffect(() => {
+    if (!user) {
+      queryClient.clear(); // Clear all queries when user logs out
+    }
+  }, [user, queryClient]);
 
   // Fetch tasks
   const {
@@ -23,7 +32,7 @@ export function TasksProvider({ children }) {
     error,
     refetch
   } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', user?.id],
     queryFn: async () => {
       try {
         const token = localStorage.getItem('token');
@@ -52,13 +61,13 @@ export function TasksProvider({ children }) {
         throw error;
       }
     },
-    enabled: true, // Always enabled, but queryFn checks for token
-    staleTime: 0, // Immediately mark data as stale
+    enabled: !!user?.id,
+    staleTime: 0, // Always fetch fresh data when query is invalidated
     cacheTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 1,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    initialData: []
+    refetchOnMount: 'always', // Always fetch on mount
+    refetchOnReconnect: 'always', // Always fetch on reconnect
   });
 
   // Create task mutation with optimistic update
@@ -69,10 +78,10 @@ export function TasksProvider({ children }) {
     },
     onMutate: async (newTask) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries(['tasks']);
+      await queryClient.cancelQueries(['tasks', user?.id]);
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueryData(['tasks']);
+      const previousTasks = queryClient.getQueryData(['tasks', user?.id]);
 
       // Optimistically update to the new value
       const optimisticTask = {
@@ -82,16 +91,16 @@ export function TasksProvider({ children }) {
         updated_at: new Date().toISOString()
       };
 
-      queryClient.setQueryData(['tasks'], old => [...(old || []), optimisticTask]);
+      queryClient.setQueryData(['tasks', user?.id], old => [...(old || []), optimisticTask]);
 
       // Return a context object with the snapshotted value
       return { previousTasks };
     },
     onError: (err, newTask, context) => {
-      queryClient.setQueryData(['tasks'], context.previousTasks);
+      queryClient.setQueryData(['tasks', user?.id], context.previousTasks);
     },
     onSettled: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries(['tasks', user?.id]);
     }
   });
 
@@ -102,10 +111,10 @@ export function TasksProvider({ children }) {
       return response;
     },
     onMutate: async ({ taskId, updates }) => {
-      await queryClient.cancelQueries(['tasks']);
-      const previousTasks = queryClient.getQueryData(['tasks']);
+      await queryClient.cancelQueries(['tasks', user?.id]);
+      const previousTasks = queryClient.getQueryData(['tasks', user?.id]);
 
-      queryClient.setQueryData(['tasks'], old => {
+      queryClient.setQueryData(['tasks', user?.id], old => {
         return old?.map(task => 
           task.id === taskId 
             ? { ...task, ...updates, updated_at: new Date().toISOString() }
@@ -116,10 +125,10 @@ export function TasksProvider({ children }) {
       return { previousTasks };
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(['tasks'], context.previousTasks);
+      queryClient.setQueryData(['tasks', user?.id], context.previousTasks);
     },
     onSettled: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries(['tasks', user?.id]);
     }
   });
 
@@ -130,20 +139,20 @@ export function TasksProvider({ children }) {
       return response;
     },
     onMutate: async (taskId) => {
-      await queryClient.cancelQueries(['tasks']);
-      const previousTasks = queryClient.getQueryData(['tasks']);
+      await queryClient.cancelQueries(['tasks', user?.id]);
+      const previousTasks = queryClient.getQueryData(['tasks', user?.id]);
 
-      queryClient.setQueryData(['tasks'], old => 
+      queryClient.setQueryData(['tasks', user?.id], old => 
         old?.filter(task => task.id !== taskId) || []
       );
 
       return { previousTasks };
     },
     onError: (err, taskId, context) => {
-      queryClient.setQueryData(['tasks'], context.previousTasks);
+      queryClient.setQueryData(['tasks', user?.id], context.previousTasks);
     },
     onSettled: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries(['tasks', user?.id]);
     }
   });
 
