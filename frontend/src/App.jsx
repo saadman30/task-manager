@@ -1,3 +1,9 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import LoginPage from './pages/LoginPage';
+import TasksPage from './pages/TasksPage';
 import { useState, useEffect } from 'react'
 import TaskList from './components/TaskList'
 import TaskForm from './components/TaskForm'
@@ -5,6 +11,26 @@ import TaskFilters from './components/TaskFilters'
 import Login from './components/Login'
 import { TaskAPI } from './services/api'
 import './App.css'
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+function PrivateRoute({ children }) {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" />;
+}
+
+function PublicRoute({ children }) {
+  const token = localStorage.getItem('token');
+  return !token ? children : <Navigate to="/tasks" />;
+}
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -120,46 +146,30 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto py-8 px-4">
-        <header className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Task Manager</h1>
-              {user && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Welcome, {user.name || user.email}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              Logout
-            </button>
-          </div>
-          <TaskFilters
-            onSearch={setSearchTerm}
-            onSort={setSortBy}
-            onFilter={setFilterStatus}
-          />
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <TaskList
-              searchTerm={searchTerm}
-              sortBy={sortBy}
-              filterStatus={filterStatus}
+    <QueryClientProvider client={queryClient}>
+      <DndProvider backend={HTML5Backend}>
+        <Router>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
             />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-            <TaskForm />
-          </div>
-        </div>
-      </div>
-    </div>
+            <Route
+              path="/tasks"
+              element={
+                <PrivateRoute>
+                  <TasksPage />
+                </PrivateRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/tasks" />} />
+          </Routes>
+        </Router>
+      </DndProvider>
+    </QueryClientProvider>
   )
 }
