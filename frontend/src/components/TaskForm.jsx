@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { TaskAPI } from '../services/api';
-
-const TASK_STATUSES = ['To Do', 'In Progress', 'Done'];
+import { useTasks } from '../contexts/TasksContext';
+import Input from './ui/Input';
+import Select from './ui/Select';
+import Button from './ui/Button';
+import { TASK_STATUS_OPTIONS } from '../constants/task';
 
 const initialFormState = {
   name: '',
@@ -11,26 +12,11 @@ const initialFormState = {
   status: 'To Do',
 };
 
-export default function TaskForm() {
+export default function TaskForm({ onSuccess }) {
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
-  const queryClient = useQueryClient();
-
-  const createTaskMutation = useMutation({
-    mutationFn: (data) => TaskAPI.createTask(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tasks']);
-      setFormData(initialFormState);
-      setErrors({});
-    },
-    onError: (error) => {
-      // Handle validation errors from the backend
-      if (error.response?.status === 422) {
-        console.log('Validation errors:', error.response.data);
-        setErrors(error.response.data.errors || {});
-      }
-    },
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { createTask } = useTasks();
 
   const validateForm = () => {
     const newErrors = {};
@@ -55,123 +41,100 @@ export default function TaskForm() {
       }
     }
 
-    if (!TASK_STATUSES.includes(formData.status)) {
-      newErrors.status = 'Invalid status';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting form data:', formData);
-    if (validateForm()) {
-      createTaskMutation.mutate(formData);
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const result = await createTask(formData);
+      if (result.success) {
+        setFormData(initialFormState);
+        setErrors({});
+        onSuccess?.();
+      } else if (result.errors) {
+        setErrors(result.errors);
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      setErrors({ general: 'Failed to create task' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.name ? 'border-red-500' : ''
-          }`}
-        />
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-        )}
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        label="Task Name"
+        type="text"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        error={errors.name}
+        disabled={isLoading}
+        required
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows="3"
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.description ? 'border-red-500' : ''
-          }`}
-        />
-        {errors.description && (
-          <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-        )}
-      </div>
+      <Input
+        label="Description"
+        as="textarea"
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+        error={errors.description}
+        disabled={isLoading}
+        rows="3"
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Due Date</label>
-        <input
-          type="datetime-local"
-          name="due_date"
-          value={formData.due_date}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.due_date ? 'border-red-500' : ''
-          }`}
-        />
-        {errors.due_date && (
-          <p className="mt-1 text-sm text-red-500">{errors.due_date}</p>
-        )}
-      </div>
+      <Input
+        label="Due Date"
+        type="datetime-local"
+        name="due_date"
+        value={formData.due_date}
+        onChange={handleChange}
+        error={errors.due_date}
+        disabled={isLoading}
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Status</label>
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.status ? 'border-red-500' : ''
-          }`}
-        >
-          {TASK_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        {errors.status && (
-          <p className="mt-1 text-sm text-red-500">{errors.status}</p>
-        )}
-      </div>
+      <Select
+        label="Status"
+        name="status"
+        value={formData.status}
+        onChange={handleChange}
+        options={TASK_STATUS_OPTIONS.slice(1)}
+        error={errors.status}
+        disabled={isLoading}
+      />
 
-      <button
-        type="submit"
-        disabled={createTaskMutation.isPending}
-        className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-      >
-        {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
-      </button>
-
-      {createTaskMutation.isError && !Object.keys(errors).length && (
-        <div className="mt-2 text-sm text-red-600">
-          An error occurred while creating the task. Please try again.
+      {errors.general && (
+        <div className="text-sm text-red-600">
+          {errors.general}
         </div>
       )}
+
+      <Button
+        type="submit"
+        isLoading={isLoading}
+        className="w-full"
+      >
+        Create Task
+      </Button>
     </form>
   );
 } 

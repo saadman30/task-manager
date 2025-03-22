@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useDrop } from 'react-dnd';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus, LogOut, X } from 'lucide-react';
 import { useTasks } from '../contexts/TasksContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useDebouncedValue } from '../hooks/useDebounce';
 import TaskCard from '../components/TaskCard';
+import TaskForm from '../components/TaskForm';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -142,6 +143,28 @@ export default function TasksPage() {
         <TaskColumn status={TASK_STATUSES.IN_PROGRESS} />
         <TaskColumn status={TASK_STATUSES.DONE} />
       </div>
+
+      {/* New Task Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 relative">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-medium">Create New Task</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsModalOpen(false)}
+                className="p-1"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <TaskForm onSuccess={() => setIsModalOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
