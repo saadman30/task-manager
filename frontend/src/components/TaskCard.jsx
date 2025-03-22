@@ -39,14 +39,17 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
     <div
       ref={drag}
       className={`
-        bg-white rounded-lg shadow p-4
-        ${isDragging ? 'opacity-50' : 'opacity-100'}
-        transition-all duration-200
-        border ${config.colors}/30
+        ${config.columnBg} rounded-lg shadow-sm p-4
+        ${isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
+        transform transition-all duration-200 ease-in-out
+        border-l-4 ${config.columnBorder}
+        hover:shadow-md hover:${config.columnHover}
+        cursor-move
+        animate-fade-in
       `}
     >
       {isEditing ? (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-slide-in">
           <Input
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
@@ -78,32 +81,34 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
           </div>
         </div>
       ) : (
-        <>
+        <div className="animate-fade-in">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-medium">{task.name}</h3>
+            <h3 className={`font-medium ${config.textColor}`}>{task.name}</h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-gray-500 hover:text-gray-700"
+                className={`${config.textColor} opacity-60 hover:opacity-100 transition-opacity duration-200`}
               >
                 <Edit2 className="w-4 h-4" />
               </button>
               <button
                 onClick={onDelete}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 opacity-60 hover:opacity-100 transition-opacity duration-200"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
-          <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>Due: {format(new Date(task.due_date), 'MMM d, yyyy')}</span>
-            <span className={`px-2 py-1 rounded ${config.colors}/20 ${config.textColor}`}>
+          <p className={`text-sm ${config.textColor} opacity-75 mb-2`}>{task.description}</p>
+          <div className="flex justify-between items-center text-sm">
+            <span className={`${config.textColor} opacity-75`}>
+              Due: {format(new Date(task.due_date), 'MMM d, yyyy')}
+            </span>
+            <span className={`px-2 py-1 rounded-full ${config.colors} ${config.textColor} font-medium transform transition-transform duration-200 hover:scale-105`}>
               {task.status}
             </span>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

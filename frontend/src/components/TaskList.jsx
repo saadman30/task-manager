@@ -1,4 +1,5 @@
 import { useDrop } from 'react-dnd';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import TaskCard from './TaskCard';
 import { TASK_STATUSES, STATUS_STYLES } from '../constants/task';
 
@@ -33,21 +34,33 @@ const TaskColumn = ({ status, tasks, onUpdateTask, onDeleteTask }) => {
         </h3>
       </div>
 
-      <div className="space-y-3">
+      <TransitionGroup className="space-y-3">
         {tasks.map(task => (
-          <TaskCard
+          <CSSTransition
             key={task.id}
-            task={task}
-            onUpdate={(updates) => onUpdateTask(task.id, updates)}
-            onDelete={() => onDeleteTask(task.id)}
-          />
+            timeout={300}
+            classNames="task"
+          >
+            <div className="task-move">
+              <TaskCard
+                task={task}
+                onUpdate={(updates) => onUpdateTask(task.id, updates)}
+                onDelete={() => onDeleteTask(task.id)}
+              />
+            </div>
+          </CSSTransition>
         ))}
         {tasks.length === 0 && (
-          <p className={`text-sm ${config.textColor}/60 text-center py-4`}>
-            No tasks in this column
-          </p>
+          <CSSTransition
+            timeout={300}
+            classNames="task"
+          >
+            <p className={`text-sm ${config.textColor}/60 text-center py-4`}>
+              No tasks in this column
+            </p>
+          </CSSTransition>
         )}
-      </div>
+      </TransitionGroup>
     </div>
   );
 };
