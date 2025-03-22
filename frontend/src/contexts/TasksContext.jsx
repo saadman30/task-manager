@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskAPI } from '../services/api';
+import { handleError, AppError, ErrorSeverity } from '../utils/errorHandler';
 
 const TasksContext = createContext(null);
 
@@ -27,8 +28,7 @@ export function TasksProvider({ children }) {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          console.log('No token found, skipping task fetch');
-          return [];
+          throw new AppError('No token found, skipping task fetch', ErrorSeverity.WARNING);
         }
         const response = await TaskAPI.getAllTasks();
         
@@ -38,8 +38,7 @@ export function TasksProvider({ children }) {
         } else if (response && Array.isArray(response.data)) {
           taskList = response.data;
         } else {
-          console.warn('Unexpected tasks response format:', response);
-          return [];
+          throw new AppError('Unexpected tasks response format', ErrorSeverity.WARNING);
         }
 
         // Sort tasks by due date ascending by default
@@ -49,7 +48,7 @@ export function TasksProvider({ children }) {
           return new Date(a.due_date) - new Date(b.due_date);
         });
       } catch (error) {
-        console.error('Error fetching tasks:', error);
+        handleError(error, 'fetchTasks');
         throw error;
       }
     },
@@ -154,7 +153,7 @@ export function TasksProvider({ children }) {
       await createTaskMutation.mutateAsync(taskData);
       return { success: true };
     } catch (error) {
-      console.error('Create task failed:', error);
+      handleError(error, 'createTask');
       if (error.response?.status === 422) {
         // Validation errors
         const errorMessage = error.response.data.message;
@@ -189,7 +188,7 @@ export function TasksProvider({ children }) {
       await updateTaskMutation.mutateAsync({ taskId, updates });
       return { success: true };
     } catch (error) {
-      console.error('Update task failed:', error);
+      handleError(error, 'updateTask');
       if (error.response?.status === 422) {
         // Validation errors
         return {
@@ -210,7 +209,7 @@ export function TasksProvider({ children }) {
       await deleteTaskMutation.mutateAsync(id);
       return { success: true };
     } catch (error) {
-      console.error('Delete task failed:', error);
+      handleError(error, 'deleteTask');
       return {
         success: false,
         error: error.response?.data?.message || 'Failed to delete task'

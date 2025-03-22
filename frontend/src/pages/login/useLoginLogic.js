@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { handleError, AppError, ErrorSeverity } from '../../utils/errorHandler';
 
 const defaultFormData = {
   email: '',
@@ -28,12 +29,13 @@ export function useLoginLogic() {
     try {
       const result = await login(formData.email, formData.password);
       if (!result.success) {
-        setError(result.error || 'Login failed. Please try again.');
+        throw new AppError(result.error || 'Login failed. Please try again.', ErrorSeverity.ERROR);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      handleError(error, 'login');
       setError(
         error.response?.data?.message ||
+        error.message ||
         'An error occurred during login. Please try again.'
       );
     } finally {

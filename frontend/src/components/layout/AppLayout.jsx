@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { TaskAPI } from "../../services/api";
+import { handleError, AppError, ErrorSeverity } from '../../utils/errorHandler';
 import Button from "../ui/Button";
 
 export default function AppLayout({ children }) {
@@ -13,7 +14,7 @@ export default function AppLayout({ children }) {
       localStorage.removeItem("user");
       navigate("/login");
     } catch (error) {
-      console.error("Logout error:", error);
+      handleError(new AppError('Failed to logout', ErrorSeverity.ERROR), 'logout');
     }
   };
 

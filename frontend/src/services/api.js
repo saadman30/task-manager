@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleError, AppError, ErrorSeverity } from '../utils/errorHandler';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -38,8 +39,8 @@ const getCsrfToken = async () => {
       withCredentials: true,
     });
   } catch (error) {
-    console.error('Error getting CSRF token:', error);
-    throw error;
+    handleError(error, 'getCsrfToken');
+    throw new AppError('Failed to get CSRF token', ErrorSeverity.CRITICAL);
   }
 };
 
@@ -52,7 +53,7 @@ export const TaskAPI = {
       const { access_token, user } = response;
       
       if (!access_token || !user) {
-        throw new Error('Invalid response from server');
+        throw new AppError('Invalid response from server', ErrorSeverity.ERROR);
       }
       
       localStorage.setItem('token', access_token);
@@ -60,7 +61,7 @@ export const TaskAPI = {
       
       return { access_token, user };
     } catch (error) {
-      console.error('Login error:', error);
+      handleError(error, 'login');
       throw error;
     }
   },
@@ -69,7 +70,7 @@ export const TaskAPI = {
     try {
       await api.post('/logout');
     } catch (error) {
-      console.error('Logout error:', error);
+      handleError(error, 'logout');
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -78,7 +79,6 @@ export const TaskAPI = {
 
   getAllTasks: async (params = {}) => {
     try {
-      console.log('Fetching tasks with params:', params);
       const queryParams = {
         search: params.search || '',
         sort: params.sort || '',
@@ -92,37 +92,37 @@ export const TaskAPI = {
         }
       });
 
-      console.log('Tasks API response:', data);
       if (Array.isArray(data)) {
         return data;
       } else if (data && Array.isArray(data.data)) {
         return data.data;
       } else {
-        console.warn('Unexpected tasks response format:', data);
-        return [];
+        throw new AppError('Unexpected tasks response format', ErrorSeverity.WARNING);
       }
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      handleError(error, 'getAllTasks');
       return [];
     }
   },
 
   createTask: async (taskData) => {
-    const data = await api.post('/tasks', taskData);
-    return data;
+    try {
+      const data = await api.post('/tasks', taskData);
+      return data;
+    } catch (error) {
+      handleError(error, 'createTask');
+      throw error;
+    }
   },
 
   updateTask: async (taskId, taskData) => {
     try {
-      console.log('API updateTask called with:', { taskId, taskData });
       if (!taskId) {
-        throw new Error(`Invalid taskId: ${taskId}`);
+        throw new AppError('Invalid taskId provided', ErrorSeverity.ERROR);
       }
       
-      // Convert taskId to number if it's a string
       const id = typeof taskId === 'string' ? parseInt(taskId, 10) : taskId;
       
-      // Make sure we're sending the right data structure
       const data = await api.put(`/tasks/${id}`, {
         name: taskData.name,
         description: taskData.description,
@@ -130,17 +130,21 @@ export const TaskAPI = {
         due_date: taskData.due_date
       });
       
-      console.log('Task update response:', data);
       return data;
     } catch (error) {
-      console.error('Task update failed:', error);
+      handleError(error, 'updateTask');
       throw error;
     }
   },
 
   deleteTask: async (taskId) => {
-    const data = await api.delete(`/tasks/${taskId}`);
-    return data;
+    try {
+      const data = await api.delete(`/tasks/${taskId}`);
+      return data;
+    } catch (error) {
+      handleError(error, 'deleteTask');
+      throw error;
+    }
   },
 
   updateTaskOrder: async (taskId, data) => {
@@ -148,7 +152,7 @@ export const TaskAPI = {
       const response = await api.patch(`/tasks/${taskId}/order`, data);
       return response.data;
     } catch (error) {
-      console.error('Error updating task order:', error);
+      handleError(error, 'updateTaskOrder');
       throw error;
     }
   },
