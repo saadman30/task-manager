@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,21 +15,26 @@ class TaskRepository implements TaskRepositoryInterface
     {
     }
 
+    public function query(): Builder
+    {
+        return $this->model->where('user_id', Auth::id());
+    }
+
     public function all(): Collection
     {
-        return $this->model->where('user_id', Auth::id())->get();
+        return $this->query()->get();
     }
 
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
-        return $this->model->where('user_id', Auth::id())
+        return $this->query()
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
 
     public function find(int $id): ?Task
     {
-        return $this->model->where('user_id', Auth::id())->find($id);
+        return $this->query()->find($id);
     }
 
     public function create(array $data): Task

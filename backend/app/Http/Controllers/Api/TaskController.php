@@ -17,9 +17,16 @@ class TaskController extends Controller
     {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return ResponseFacade::json($this->taskService->getPaginatedTasks()->toArray());
+        $params = [
+            'search' => $request->get('search'),
+            'sort' => $request->get('sort'),
+            'status' => $request->get('status'),
+            'per_page' => $request->get('per_page', 50),
+        ];
+
+        return ResponseFacade::json($this->taskService->searchTasks($params));
     }
 
     public function store(StoreTaskRequest $request): JsonResponse
@@ -44,10 +51,5 @@ class TaskController extends Controller
     {
         $this->taskService->deleteTask($id);
         return ResponseFacade::json(null, Response::HTTP_NO_CONTENT);
-    }
-
-    public function search(Request $request): JsonResponse
-    {
-        return ResponseFacade::json($this->taskService->searchTasks($request->all())->toArray());
     }
 } 
