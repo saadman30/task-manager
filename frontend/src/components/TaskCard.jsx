@@ -16,18 +16,21 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
 
   const statusConfig = {
     'To Do': {
-      colors: 'bg-amber-50 border-amber-200',
-      textColor: 'text-amber-700',
+      colors: 'bg-yellow-100',
+      shadowColor: 'shadow-yellow-200/50',
+      textColor: 'text-yellow-800',
       icon: <Circle className="w-3 h-3" />
     },
     'In Progress': {
-      colors: 'bg-blue-50 border-blue-200',
-      textColor: 'text-blue-700',
+      colors: 'bg-blue-100',
+      shadowColor: 'shadow-blue-200/50',
+      textColor: 'text-blue-800',
       icon: <Pause className="w-3 h-3" />
     },
     'Done': {
-      colors: 'bg-emerald-50 border-emerald-200',
-      textColor: 'text-emerald-700',
+      colors: 'bg-green-100',
+      shadowColor: 'shadow-green-200/50',
+      textColor: 'text-green-800',
       icon: <CheckCircle className="w-3 h-3" />
     }
   };
@@ -40,20 +43,24 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
         ref={drag}
         onClick={() => setIsModalOpen(true)}
         className={`
-          bg-white border rounded-lg overflow-hidden cursor-pointer
-          hover:shadow-md transition-all duration-200
+          ${config.colors} rounded-lg cursor-pointer
+          transform transition-all duration-200
+          hover:-translate-y-1 hover:shadow-xl ${config.shadowColor}
+          relative overflow-hidden
           ${isDragging ? 'opacity-50 scale-95' : ''}
+          before:absolute before:inset-0 before:z-0
+          before:bg-gradient-to-b before:from-white/10 before:to-transparent
         `}
       >
-        <div className="p-4">
+        <div className="relative z-10 p-4">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 text-left">
-              <h4 className="font-medium text-gray-900 truncate">
+              <h4 className={`font-medium ${config.textColor} text-lg truncate`}>
                 {task.name}
               </h4>
               {task.description && (
-                <p className="text-sm text-gray-600">
+                <p className={`mt-1 text-sm ${config.textColor}/80`}>
                   {task.description}
                 </p>
               )}
@@ -62,12 +69,11 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
               className="flex items-center space-x-1"
               onClick={(e) => e.stopPropagation()} // Prevent modal from opening when clicking actions
             >
-             
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(task.id)}
-                className="text-gray-400 hover:text-red-600 p-1"
+                className={`${config.textColor}/60 hover:${config.textColor} p-1`}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -79,14 +85,14 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
             <div className="flex items-center gap-2">
               <span className={`
                 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium
-                ${config.colors} ${config.textColor}
+                bg-white/50 backdrop-blur-sm ${config.textColor}
               `}>
                 {config.icon}
                 {task.status}
               </span>
             </div>
             {task.due_date && (
-              <div className="flex items-center text-xs text-gray-500">
+              <div className={`flex items-center text-xs ${config.textColor}/70`}>
                 <Calendar className="w-3.5 h-3.5 mr-1" />
                 {new Date(task.due_date).toLocaleDateString('en-US', {
                   month: 'short',

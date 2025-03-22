@@ -39,15 +39,36 @@ function TaskColumn({ status, tasks, onTaskMove, onTaskDelete }) {
     }),
   });
 
+  const columnConfig = {
+    'To Do': {
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-100',
+      hoverColor: 'ring-yellow-200',
+    },
+    'In Progress': {
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-100',
+      hoverColor: 'ring-blue-200',
+    },
+    'Done': {
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-100',
+      hoverColor: 'ring-green-200',
+    },
+  };
+
+  const config = columnConfig[status];
+
   return (
     <div
       ref={drop}
       className={`
-        bg-white rounded-xl border border-gray-200
-        ${isOver ? 'ring-2 ring-blue-500' : ''}
+        ${config.bgColor} rounded-xl border ${config.borderColor}
+        ${isOver ? `ring-2 ${config.hoverColor}` : ''}
+        flex flex-col
       `}
     >
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200/50">
         <h3 className="text-lg font-semibold text-gray-900">{status}</h3>
         <div className="mt-1">
           <span className="text-sm text-gray-500">
@@ -56,7 +77,7 @@ function TaskColumn({ status, tasks, onTaskMove, onTaskDelete }) {
         </div>
       </div>
       
-      <div className="p-4 space-y-4 min-h-[calc(100vh-20rem)] overflow-auto">
+      <div className="p-4 space-y-6 min-h-[calc(100vh-20rem)] overflow-auto">
         {tasks
           .filter((task) => task.status === status)
           .map((task) => (
