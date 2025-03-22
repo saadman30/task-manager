@@ -70,9 +70,12 @@ export default function TaskList({ groupedTasks, onUpdateTask, onDeleteTask, isL
     return <div className="text-center py-8">Loading tasks...</div>;
   }
 
+  // Filter out the 'All' status when rendering columns
+  const columnStatuses = Object.values(TASK_STATUSES).filter(status => status !== TASK_STATUSES.ALL);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {Object.values(TASK_STATUSES).map(status => (
+      {columnStatuses.map(status => (
         <TaskColumn
           key={status}
           status={status}

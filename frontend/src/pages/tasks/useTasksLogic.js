@@ -5,7 +5,7 @@ import { showToast } from '../../components/ui/Toast';
 import { taskFilterSchema, taskSchema, TASK_VALIDATION } from '../../schemas/task';
 import { useTasks } from '../../contexts/TasksContext';
 import { useDebouncedValue } from '../../hooks/useDebounce';
-import { TASK_STATUS_OPTIONS } from '../../constants/task';
+import { TASK_STATUS_OPTIONS, TASK_STATUSES } from '../../constants/task';
 
 export const SORT_OPTIONS = [
   { value: 'due_date_asc', label: 'Due Date (Earliest First)' },
@@ -85,7 +85,7 @@ export function useTasksLogic() {
       (task.name || '').toLowerCase().includes(searchLower) ||
       (task.description || '').toLowerCase().includes(searchLower);
     
-    const matchesStatus = status === 'All' || task.status === status;
+    const matchesStatus = status === TASK_STATUSES.ALL || task.status === status;
     
     return matchesSearch && matchesStatus;
   }) || [];

@@ -11,6 +11,10 @@ import { useAuth } from '../../contexts/AuthContext';
 
 // Render task filters section
 function TaskFilters({ searchTerm, status, sortBy, onSearchChange, onStatusChange, onSortChange, isDisabled }) {
+  const handleClearSearch = () => {
+    onSearchChange({ target: { value: '' } });
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow mb-4">
       <div className="w-full">
@@ -19,6 +23,7 @@ function TaskFilters({ searchTerm, status, sortBy, onSearchChange, onStatusChang
           placeholder="Search by name or description..."
           value={searchTerm}
           onChange={onSearchChange}
+          onClear={handleClearSearch}
           disabled={isDisabled}
         />
       </div>

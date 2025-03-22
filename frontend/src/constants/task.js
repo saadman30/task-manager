@@ -1,11 +1,12 @@
 export const TASK_STATUSES = {
   TODO: 'To Do',
   IN_PROGRESS: 'In Progress',
-  DONE: 'Done'
+  DONE: 'Done',
+  ALL: 'All'
 };
 
 export const TASK_STATUS_OPTIONS = [
-  { value: '', label: 'All' },
+  { value: TASK_STATUSES.ALL, label: 'All' },
   { value: TASK_STATUSES.TODO, label: TASK_STATUSES.TODO },
   { value: TASK_STATUSES.IN_PROGRESS, label: TASK_STATUSES.IN_PROGRESS },
   { value: TASK_STATUSES.DONE, label: TASK_STATUSES.DONE },
