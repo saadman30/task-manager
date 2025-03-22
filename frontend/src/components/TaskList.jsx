@@ -1,116 +1,71 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDrag, useDrop } from 'react-dnd';
-import { TaskAPI } from '../services/api';
+import { useDrop } from 'react-dnd';
 import TaskCard from './TaskCard';
-import { useTasks } from '../contexts/TasksContext';
+import { TASK_STATUSES, STATUS_STYLES } from '../constants/task';
 
-const TASK_STATUSES = ['To Do', 'In Progress', 'Done'];
-
-const TaskColumn = ({ status, tasks = [], onTaskMove }) => {
+const TaskColumn = ({ status, tasks, onUpdateTask, onDeleteTask }) => {
   const [{ isOver }, drop] = useDrop({
     accept: 'TASK',
-    drop: (item) => onTaskMove(item.id, status),
+    drop: (item) => {
+      if (item.status !== status) {
+        onUpdateTask(item.id, { status });
+      }
+    },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
   });
 
-  // Ensure tasks is an array before filtering
-  const filteredTasks = Array.isArray(tasks) 
-    ? tasks.filter((task) => task.status === status)
-    : [];
-
-  console.log(`${status} column tasks:`, filteredTasks);
+  const config = STATUS_STYLES[status];
 
   return (
     <div
       ref={drop}
-      className={`flex-1 min-h-[500px] p-4 rounded-lg bg-gray-100 ${
-        isOver ? 'bg-gray-200' : ''
-      }`}
+      className={`
+        flex-1 min-w-[300px] p-4 rounded-lg
+        ${config.colors}/20 border ${config.colors}/30
+        ${isOver ? config.colors + '/40' : ''}
+        transition-colors duration-200
+      `}
     >
-      <h3 className="text-lg font-semibold mb-4">
-        {status}
-      </h3>
-      <div className="space-y-4">
-        {filteredTasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
+      <div className="flex items-center justify-between mb-4">
+        <h3 className={`font-medium ${config.textColor}`}>
+          {status} ({tasks.length})
+        </h3>
+      </div>
+
+      <div className="space-y-3">
+        {tasks.map(task => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            onUpdate={(updates) => onUpdateTask(task.id, updates)}
+            onDelete={() => onDeleteTask(task.id)}
+          />
         ))}
+        {tasks.length === 0 && (
+          <p className={`text-sm ${config.textColor}/60 text-center py-4`}>
+            No tasks in this column
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
-export default function TaskList({ searchTerm, sortBy, filterStatus }) {
-  const queryClient = useQueryClient();
-  const { tasks: allTasks, isLoading, error, filterTasks } = useTasks();
-
-  // Apply filters and sorting
-  const tasks = filterTasks(allTasks, {
-    searchTerm,
-    status: filterStatus,
-    sortBy
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, data }) => {
-      console.log('Updating task:', taskId, 'with data:', data);
-      return TaskAPI.updateTask(taskId, data);
-    },
-    onMutate: async ({ taskId, data }) => {
-      await queryClient.cancelQueries(['tasks']);
-      const previousTasks = queryClient.getQueryData(['tasks']);
-      queryClient.setQueryData(['tasks'], (old) =>
-        Array.isArray(old)
-          ? old.map((task) => (task.id === taskId ? { ...task, ...data } : task))
-          : []
-      );
-      return { previousTasks };
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['tasks'], context.previousTasks);
-      console.error('Error updating task:', err);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(['tasks']);
-    },
-  });
-
-  const handleTaskMove = (taskId, newStatus) => {
-    console.log('Moving task:', { taskId, newStatus });
-    updateTaskMutation.mutate({
-      taskId: parseInt(taskId, 10),
-      data: { status: newStatus }
-    });
-  };
-
+export default function TaskList({ groupedTasks, onUpdateTask, onDeleteTask, isLoading }) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-600">Loading tasks...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    console.error('Error loading tasks:', error);
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-red-600">
-          Error loading tasks. Please try again.
-        </div>
-      </div>
-    );
+    return <div className="text-center py-8">Loading tasks...</div>;
   }
 
   return (
-    <div className="flex gap-4 p-4">
-      {TASK_STATUSES.map((status) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {Object.values(TASK_STATUSES).map(status => (
         <TaskColumn
           key={status}
           status={status}
-          tasks={tasks}
-          onTaskMove={handleTaskMove}
+          tasks={groupedTasks[status] || []}
+          onUpdateTask={onUpdateTask}
+          onDeleteTask={onDeleteTask}
         />
       ))}
     </div>

@@ -53,6 +53,13 @@ export const taskSchema = z.object({
     )
 });
 
+// Filter schema for task list
+export const taskFilterSchema = z.object({
+  searchTerm: z.string().optional().default(''),
+  status: z.enum(['All', ...TASK_STATUS_OPTIONS.map(opt => opt.value)]).default('All'),
+  sortBy: z.enum(['due_date_asc', 'due_date_desc']).default('due_date_asc')
+});
+
 // Helper function to validate a single field
 export const validateTaskField = (name, value) => {
   try {
