@@ -98,8 +98,8 @@ export default function TasksPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex-1 min-w-[280px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="w-full">
           <Input
             type="text"
             placeholder="Search tasks..."
@@ -108,25 +108,27 @@ export default function TasksPage() {
             className="w-full"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             options={TASK_STATUS_OPTIONS}
+            className="w-full"
           />
           <Select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             options={SORT_OPTIONS}
+            className="w-full"
           />
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Button onClick={() => setIsModalOpen(true)} className="w-full">
             <Plus className="w-5 h-5 mr-1" />
             New Task
           </Button>
           <Button 
             onClick={logout}
             variant="secondary"
-            className="bg-red-50 text-red-600 hover:bg-red-100"
+            className="w-full bg-red-50 text-red-600 hover:bg-red-100"
           >
             <LogOut className="w-5 h-5 mr-1" />
             Logout
@@ -135,12 +137,11 @@ export default function TasksPage() {
       </div>
 
       {/* Task Columns */}
-      <div className="flex gap-6 overflow-x-auto pb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <TaskColumn status={TASK_STATUSES.TODO} />
         <TaskColumn status={TASK_STATUSES.IN_PROGRESS} />
         <TaskColumn status={TASK_STATUSES.DONE} />
       </div>
-    
     </div>
   );
 } 
