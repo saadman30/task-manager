@@ -1,26 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import TasksPage from './pages/TasksPage';
 import { useState, useEffect } from 'react'
-import TaskList from './components/TaskList'
-import TaskForm from './components/TaskForm'
-import TaskFilters from './components/TaskFilters'
-import Login from './components/Login'
 import { TaskAPI } from './services/api'
 import './App.css'
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -33,9 +16,6 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
   const [isInitialized, setIsInitialized] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -82,24 +62,6 @@ export default function App() {
     initializeApp()
   }, []) // Empty dependency array means this runs once on mount
 
-  const handleLogin = async (data) => {
-    console.log('Processing login response:', data)
-    try {
-      if (!data || !data.token || !data.user) {
-        throw new Error('Invalid login response')
-      }
-
-      setUser(data.user)
-      setIsAuthenticated(true)
-      setAuthError(null)
-      console.log('Authentication state updated successfully')
-    } catch (error) {
-      console.error('Error handling login:', error)
-      setAuthError('Failed to process login. Please try again.')
-      handleLogout()
-    }
-  }
-
   const handleLogout = async () => {
     console.log('Starting logout process...')
     try {
@@ -141,35 +103,25 @@ export default function App() {
     )
   }
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />
-  }
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <DndProvider backend={HTML5Backend}>
-        <Router>
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <LoginPage />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <PrivateRoute>
-                  <TasksPage />
-                </PrivateRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/tasks" />} />
-          </Routes>
-        </Router>
-      </DndProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <PrivateRoute>
+            <TasksPage />
+          </PrivateRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/tasks" />} />
+    </Routes>
   )
 }

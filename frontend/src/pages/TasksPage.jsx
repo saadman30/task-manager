@@ -4,10 +4,10 @@ import { useDrop } from 'react-dnd';
 import { TaskAPI } from '../services/api';
 import AppLayout from '../components/layout/AppLayout';
 import Input from '../components/ui/Input';
-import DebouncedInput from '../components/ui/DebouncedInput';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import TaskCard from '../components/TaskCard';
+import { useDebouncedValue } from '../hooks/useDebounce';
 
 const TASK_STATUSES = [
   { value: '', label: 'All' },
@@ -79,7 +79,7 @@ function TaskColumn({ status, tasks, onTaskMove, onTaskDelete }) {
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -90,12 +90,20 @@ export default function TasksPage() {
     status: 'To Do',
   });
 
+  // Use debounced value for search
+  const debouncedSearchTerm = useDebouncedValue(searchInput, 500);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
   // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', { searchTerm, sortBy, filterStatus }],
+    queryKey: ['tasks', { searchTerm: debouncedSearchTerm, sortBy, filterStatus }],
     queryFn: async () => {
       const response = await TaskAPI.getAllTasks({
-        search: searchTerm,
+        search: debouncedSearchTerm,
         sort: sortBy,
         status: filterStatus,
       });
@@ -206,11 +214,10 @@ export default function TasksPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Search Tasks
                 </label>
-                <DebouncedInput
-                  value={searchTerm}
-                  onChange={setSearchTerm}
+                <Input
+                  value={searchInput}
+                  onChange={handleSearchChange}
                   placeholder="Search by name or description..."
-                  debounceMs={500}
                   className="w-full"
                 />
               </div>

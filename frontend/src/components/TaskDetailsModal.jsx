@@ -1,4 +1,5 @@
 import React from 'react';
+import { Circle, Pause, CheckCircle, Calendar } from 'lucide-react';
 import Button from './ui/Button';
 
 export default function TaskDetailsModal({ task, onClose, onUpdate, onDelete }) {
@@ -8,29 +9,17 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, onDelete }) 
     'To Do': {
       colors: 'bg-amber-50 border-amber-200',
       textColor: 'text-amber-700',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-        </svg>
-      )
+      icon: <Circle className="w-4 h-4" />
     },
     'In Progress': {
       colors: 'bg-blue-50 border-blue-200',
       textColor: 'text-blue-700',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-        </svg>
-      )
+      icon: <Pause className="w-4 h-4" />
     },
     'Done': {
       colors: 'bg-emerald-50 border-emerald-200',
       textColor: 'text-emerald-700',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-        </svg>
-      )
+      icon: <CheckCircle className="w-4 h-4" />
     }
   };
 
@@ -74,9 +63,7 @@ export default function TaskDetailsModal({ task, onClose, onUpdate, onDelete }) 
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-1">Due Date</h4>
                       <div className="flex items-center text-sm text-gray-600">
-                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                        <Calendar className="w-4 h-4 mr-1.5" />
                         {new Date(task.due_date).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
