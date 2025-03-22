@@ -35,14 +35,22 @@ export function TasksProvider({ children }) {
         const response = await TaskAPI.getAllTasks();
         console.log('Tasks fetched successfully:', response);
         
+        let taskList = [];
         if (Array.isArray(response)) {
-          return response;
+          taskList = response;
         } else if (response && Array.isArray(response.data)) {
-          return response.data;
+          taskList = response.data;
         } else {
           console.warn('Unexpected tasks response format:', response);
           return [];
         }
+
+        // Sort tasks by due date ascending by default
+        return taskList.sort((a, b) => {
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date) - new Date(b.due_date);
+        });
       } catch (error) {
         console.error('Error fetching tasks:', error);
         throw error;
@@ -70,8 +78,9 @@ export function TasksProvider({ children }) {
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, updates }) => {
-      const response = await TaskAPI.updateTask(id, updates);
+    mutationFn: async ({ taskId, updates }) => {
+      console.log('Updating task:', taskId, 'with updates:', updates);
+      const response = await TaskAPI.updateTask(taskId, updates);
       return response;
     },
     onSuccess: () => {
@@ -126,9 +135,10 @@ export function TasksProvider({ children }) {
     }
   }, [createTaskMutation]);
 
-  const updateTask = useCallback(async (id, updates) => {
+  const updateTask = useCallback(async (taskId, updates) => {
     try {
-      await updateTaskMutation.mutateAsync({ id, updates });
+      console.log('updateTask called with:', { taskId, updates });
+      await updateTaskMutation.mutateAsync({ taskId, updates });
       return { success: true };
     } catch (error) {
       console.error('Update task failed:', error);
@@ -180,21 +190,16 @@ export function TasksProvider({ children }) {
       filteredTasks = filteredTasks.filter(task => task.status === status);
     }
 
-    // Apply sorting
+    // Apply sorting (only due date sorting is supported)
     if (sortBy) {
       filteredTasks.sort((a, b) => {
-        switch (sortBy) {
-          case 'name':
-            return a.name.localeCompare(b.name);
-          case 'dueDate':
-            if (!a.due_date) return 1;
-            if (!b.due_date) return -1;
-            return new Date(a.due_date) - new Date(b.due_date);
-          case 'status':
-            return a.status.localeCompare(b.status);
-          default:
-            return 0;
-        }
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        const dateA = new Date(a.due_date);
+        const dateB = new Date(b.due_date);
+        return sortBy === 'due_date_asc' 
+          ? dateA - dateB 
+          : dateB - dateA;
       });
     }
 

@@ -8,7 +8,6 @@ import TaskCard from '../components/TaskCard';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import TaskDetailsModal from '../components/TaskDetailsModal';
 import { TASK_STATUSES, TASK_STATUS_OPTIONS, SORT_OPTIONS, STATUS_STYLES } from '../constants/task';
 
 export default function TasksPage() {
@@ -144,14 +143,7 @@ export default function TasksPage() {
         <TaskColumn status={TASK_STATUSES.IN_PROGRESS} />
         <TaskColumn status={TASK_STATUSES.DONE} />
       </div>
-
-      {/* New Task Modal */}
-      {isModalOpen && (
-        <TaskDetailsModal
-          onClose={() => setIsModalOpen(false)}
-          onUpdate={createTask}
-        />
-      )}
+    
     </div>
   );
 } 

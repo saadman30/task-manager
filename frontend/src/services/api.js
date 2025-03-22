@@ -115,10 +115,21 @@ export const TaskAPI = {
   updateTask: async (taskId, taskData) => {
     try {
       console.log('API updateTask called with:', { taskId, taskData });
-      if (!taskId || typeof taskId !== 'number') {
+      if (!taskId) {
         throw new Error(`Invalid taskId: ${taskId}`);
       }
-      const data = await api.put(`/tasks/${taskId}`, taskData);
+      
+      // Convert taskId to number if it's a string
+      const id = typeof taskId === 'string' ? parseInt(taskId, 10) : taskId;
+      
+      // Make sure we're sending the right data structure
+      const data = await api.put(`/tasks/${id}`, {
+        name: taskData.name,
+        description: taskData.description,
+        status: taskData.status,
+        due_date: taskData.due_date
+      });
+      
       console.log('Task update response:', data);
       return data;
     } catch (error) {
