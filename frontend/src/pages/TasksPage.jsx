@@ -42,12 +42,21 @@ function TaskColumn({ status, tasks, onTaskMove, onTaskDelete }) {
   return (
     <div
       ref={drop}
-      className={`bg-white rounded-lg shadow p-4 h-full overflow-auto ${
-        isOver ? 'ring-2 ring-blue-500' : ''
-      }`}
+      className={`
+        bg-white rounded-xl border border-gray-200
+        ${isOver ? 'ring-2 ring-blue-500' : ''}
+      `}
     >
-      <h3 className="text-lg font-semibold mb-4 sticky top-0 bg-white py-2">{status}</h3>
-      <div className="space-y-4">
+      <div className="p-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">{status}</h3>
+        <div className="mt-1">
+          <span className="text-sm text-gray-500">
+            {tasks.filter(task => task.status === status).length} tasks
+          </span>
+        </div>
+      </div>
+      
+      <div className="p-4 space-y-4 min-h-[calc(100vh-20rem)] overflow-auto">
         {tasks
           .filter((task) => task.status === status)
           .map((task) => (
@@ -58,6 +67,11 @@ function TaskColumn({ status, tasks, onTaskMove, onTaskDelete }) {
               onDelete={onTaskDelete}
             />
           ))}
+        {tasks.filter(task => task.status === status).length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-sm">No tasks in this column</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -146,7 +160,7 @@ export default function TasksPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="text-xl text-gray-600">Loading tasks...</div>
         </div>
       </AppLayout>
@@ -155,10 +169,17 @@ export default function TasksPage() {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-4rem)] flex gap-4">
-        {/* Tasks List - Left Side (2/3) */}
-        <div className="flex-grow w-2/3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+      <div className="h-[calc(100vh-5rem)] flex gap-8">
+        {/* Tasks List - Left Side */}
+        <div className="flex-grow min-w-0">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Task Board</h1>
+            <p className="mt-2 text-gray-600">
+              Manage and organize your tasks across different stages
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {['To Do', 'In Progress', 'Done'].map((status) => (
               <TaskColumn
                 key={status}
@@ -171,55 +192,80 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Controls - Right Side (1/3) */}
-        <div className="w-1/3 space-y-4 overflow-auto">
+        {/* Controls - Right Side */}
+        <div className="w-80 flex flex-col gap-6">
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-lg font-semibold mb-4">Filters & Sort</h2>
-            <div className="space-y-4">
-              <DebouncedInput
-                label="Search Tasks"
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="Search by name or description..."
-                debounceMs={500}
-              />
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-5 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Filters & Sort
+              </h2>
+            </div>
+            <div className="p-5 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Tasks
+                </label>
+                <DebouncedInput
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  placeholder="Search by name or description..."
+                  debounceMs={500}
+                  className="w-full"
+                />
+              </div>
 
-              <Select
-                label="Sort By"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                options={SORT_OPTIONS}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sort By
+                </label>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  options={SORT_OPTIONS}
+                  className="w-full"
+                />
+              </div>
 
-              <Select
-                label="Filter Status"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                options={TASK_STATUSES}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Status
+                </label>
+                <Select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  options={TASK_STATUSES}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
 
           {/* Create Task Form */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Create New Task</h2>
-              {!isCreating && (
-                <Button onClick={() => setIsCreating(true)}>
-                  Add New Task
-                </Button>
-              )}
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-5 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900">Create New Task</h2>
+                {!isCreating && (
+                  <Button 
+                    onClick={() => setIsCreating(true)}
+                    size="sm"
+                  >
+                    Add Task
+                  </Button>
+                )}
+              </div>
             </div>
 
             {isCreating && (
-              <form onSubmit={handleCreateTask} className="space-y-4">
+              <div className="p-5 space-y-5">
                 <Input
                   label="Task Name"
                   name="name"
                   value={newTask.name}
                   onChange={handleNewTaskChange}
                   required
+                  placeholder="Enter task name"
                 />
 
                 <Input
@@ -228,7 +274,8 @@ export default function TasksPage() {
                   value={newTask.description}
                   onChange={handleNewTaskChange}
                   as="textarea"
-                  rows="3"
+                  rows="4"
+                  placeholder="Enter task description"
                 />
 
                 <Input
@@ -247,7 +294,7 @@ export default function TasksPage() {
                   options={TASK_STATUSES.filter(status => status.value)}
                 />
 
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end space-x-3 pt-3">
                   <Button
                     variant="secondary"
                     onClick={() => setIsCreating(false)}
@@ -256,12 +303,13 @@ export default function TasksPage() {
                   </Button>
                   <Button
                     type="submit"
+                    onClick={handleCreateTask}
                     isLoading={createTaskMutation.isPending}
                   >
                     Create Task
                   </Button>
                 </div>
-              </form>
+              </div>
             )}
           </div>
         </div>
