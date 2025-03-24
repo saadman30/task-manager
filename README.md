@@ -76,7 +76,7 @@ A modern, full-stack task management application built with Laravel and React. T
 
 4. Start the Docker containers:
    ```bash
-   docker compose up -d
+   docker compose up --build -d
    ```
 
    This will start:
