@@ -47,7 +47,7 @@ A modern, full-stack task management application built with Laravel and React. T
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd task-management-app
+   cd task-manager
    ```
 
 2. Copy environment files:
