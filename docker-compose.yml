@@ -10,8 +10,13 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=${API_URL}
     networks:
       - app_network
     depends_on:
@@ -28,13 +33,18 @@ services:
       - ./backend:/var/www
       - ./backend/storage:/var/www/storage
       - ./backend/bootstrap/cache:/var/www/bootstrap/cache
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
     environment:
-      - APP_URL=http://localhost:8000
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=db
-      - DB_USERNAME=test
-      - DB_PASSWORD=12345678
+      - APP_URL=${APP_URL}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     networks:
       - app_network
     depends_on:
@@ -42,7 +52,7 @@ services:
         condition: service_healthy
 
   backend-nginx:
-    image: nginx:alpine
+    image: nginx:1.25-alpine
     container_name: laravel_nginx
     restart: unless-stopped
     ports:
@@ -50,6 +60,11 @@ services:
     volumes:
       - ./backend:/var/www
       - ./backend/docker/nginx/conf.d:/etc/nginx/conf.d/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - app_network
     depends_on:
@@ -59,11 +74,16 @@ services:
     image: mysql:8.0
     container_name: app_db
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     environment:
-      MYSQL_DATABASE: db
-      MYSQL_ROOT_PASSWORD: 12345678
-      MYSQL_PASSWORD: 12345678
-      MYSQL_USER: test
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
     volumes:
       - dbdata:/var/lib/mysql
     ports:
@@ -71,7 +91,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "test", "--password=12345678"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USERNAME}", "--password=${DB_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 5
